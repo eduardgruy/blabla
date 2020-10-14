@@ -3,9 +3,9 @@ functionappname=$1
 rgname=$2
 webappname=$3
 
-echo $rgname 
-echo $webappname 
-echo $functionappname 
+echo $rgname > $AZ_SCRIPTS_OUTPUT_PATH
+echo $webappname > $AZ_SCRIPTS_OUTPUT_PATH
+echo $functionappname > $AZ_SCRIPTS_OUTPUT_PATH
 
 # wget -O functions.zip 'https://storgluedeployment.blob.core.windows.net/artifacts/functions.zip?sp=r&st=2020-10-13T13:02:20Z&se=2022-10-13T21:02:20Z&spr=https&sv=2019-12-12&sr=b&sig=AZkZbkC6QV7d1Yr1MMHTo3IRx4KSKLzB8qemY6amWXQ%3D'
 # unzip functions.zip
