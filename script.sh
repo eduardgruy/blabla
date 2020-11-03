@@ -41,6 +41,6 @@ KEYNAME=${TMP_KEYNAME%%;*}
 TMP_KEY_VALUE=${EVH_CONNECTION_STRING#*SharedAccessKey=}
 KEY_VALUE=${TMP_KEY_VALUE%%;*}
 
-SAS=${get_sas_token "$URL" "$KEYNAME" "$KEY_VALUE"}
+SAS=$(get_sas_token "$URL" "$KEYNAME" "$KEY_VALUE")
 
 jq -n --arg sas "$SAS" '{sas_token: $sas}' > $AZ_SCRIPTS_OUTPUT_PATH
