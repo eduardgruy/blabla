@@ -3,6 +3,23 @@ rgname=$1
 functionappname=$2
 webappname=$3
 
+
+get_sas_token() {
+    local EVENTHUB_URI=$1
+    local SHARED_ACCESS_KEY_NAME=$2
+    local SHARED_ACCESS_KEY=$3
+    local EXPIRY=${EXPIRY:=$((60 * 60 * 24))} # Default token expiry is 1 day
+
+    local ENCODED_URI=$(echo -n $EVENTHUB_URI | jq -s -R -r @uri)
+    local TTL=$(($(date +%s) + $EXPIRY))
+    local UTF8_SIGNATURE=$(printf "%s\n%s" $ENCODED_URI $TTL | iconv -t utf8)
+
+    local HASH=$(echo -n "$UTF8_SIGNATURE" | openssl sha256 -hmac $SHARED_ACCESS_KEY -binary | base64)
+    local ENCODED_HASH=$(echo -n $HASH | jq -s -R -r @uri)
+
+    echo -n "SharedAccessSignature sr=$ENCODED_URI&sig=$ENCODED_HASH&se=$TTL&skn=$SHARED_ACCESS_KEY_NAME"
+}
+
 echo "$rgname $functionappname $webappname" 1>&2
 wget -O 'functions.zip' 'https://storgluedeployment.blob.core.windows.net/artifacts/functions.zip?sp=r&st=2020-10-13T13:02:20Z&se=2022-10-13T21:02:20Z&spr=https&sv=2019-12-12&sr=b&sig=AZkZbkC6QV7d1Yr1MMHTo3IRx4KSKLzB8qemY6amWXQ%3D'
 
@@ -14,5 +31,13 @@ az webapp deployment source config-zip --resource-group $rgname --name $webappna
 az webapp config set -n $webappname -g $rgname --startup-file='pm2 serve /home/site/wwwroot/build --no-daemon'
 az webapp restart -n $webappname -g $rgname
 
-# az functionapp deployment source config-zip -g test2 -n \
-# 'functtstdtjs3v2s6' --src ./functions.zip
+ENDPOINT=${CONNECTION_STRING%/;*}
+URL=${ENDPOINT/"Endpoint=sb:"/"https:"}
+
+TMP_KEYNAME=${CONNECTION_STRING#*SharedAccessKeyName=}
+KEYNAME=${TMP_KEYNAME%%;*}
+
+TMP_KEY_VALUE=${CONNECTION_STRING#*SharedAccessKey=}
+KEY_VALUE=${TMP_KEY_VALUE%%;*}
+
+get_sas_token $URL $KEYNAME $KEY_VALUE | jq -c '{Result: map({id: .id})}' > output.txt
